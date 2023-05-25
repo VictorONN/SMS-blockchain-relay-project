@@ -68,36 +68,36 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       backgroundColor: Colors.blue[800],
-      bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (int index) {
-            setState(() {
-              _currentIndex = index; // Update the selected item index
-            });
+      // bottomNavigationBar: BottomNavigationBar(
+      //     currentIndex: _currentIndex,
+      //     onTap: (int index) {
+      //       setState(() {
+      //         _currentIndex = index; // Update the selected item index
+      //       });
 
-            // Perform actions based on the tapped item
-            if (index == 1) {
-              // Handle other items
+      //       // Perform actions based on the tapped item
+      //       if (index == 1) {
+      //         // Handle other items
 
-              setState(() {
-                _new_message = 0; // Update the selected item index
-              });
-              const snackBar = SnackBar(
-                content: Text('Transactions Updated'),
-              );
-              ScaffoldMessenger.of(context).showSnackBar(snackBar);
-            }
-          },
-          backgroundColor: Colors.grey[200],
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'home'),
-            // BottomNavigationBarItem(icon: Icon(Icons.), label: 'message'),
-            BottomNavigationBarItem(
-                icon: Icon(
-                  Icons.refresh,
-                ),
-                label: 'Sync')
-          ]),
+      //         setState(() {
+      //           _new_message = 0; // Update the selected item index
+      //         });
+      //         const snackBar = SnackBar(
+      //           content: Text('Transactions Updated'),
+      //         );
+      //         ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      //       }
+      //     },
+      //     backgroundColor: Colors.grey[200],
+      //     items: const [
+      //       BottomNavigationBarItem(icon: Icon(Icons.home), label: 'home'),
+      //       // BottomNavigationBarItem(icon: Icon(Icons.), label: 'message'),
+      //       BottomNavigationBarItem(
+      //           icon: Icon(
+      //             Icons.refresh,
+      //           ),
+      //           label: 'Sync')
+      //     ]),
       body: SafeArea(
         child: Column(children: [
           Padding(
@@ -161,39 +161,39 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
 
-                const SizedBox(
-                  height: 25,
-                ),
+                // const SizedBox(
+                //   height: 25,
+                // ),
 
                 //Search Bar
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                      color: Colors.blue[600],
-                      borderRadius: BorderRadius.circular(12)),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        Icons.search,
-                        color: Colors.white,
-                      ),
-                      SizedBox(
-                        width: 5,
-                      ),
-                      Text(
-                        "Search Message",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
+                // Container(
+                //   padding: const EdgeInsets.all(12),
+                //   decoration: BoxDecoration(
+                //       color: Colors.blue[600],
+                //       borderRadius: BorderRadius.circular(12)),
+                //   child: const Row(
+                //     children: [
+                //       Icon(
+                //         Icons.search,
+                //         color: Colors.white,
+                //       ),
+                //       SizedBox(
+                //         width: 5,
+                //       ),
+                //       Text(
+                //         "Search Message",
+                //         style: TextStyle(color: Colors.white),
+                //       ),
+                //     ],
+                //   ),
+                // ),
 
                 const SizedBox(
-                  height: 25,
+                  height: 15,
                 ),
 
                 // how do you feel
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
@@ -204,9 +204,20 @@ class _HomePageState extends State<HomePage> {
                           fontSize: 18,
                           fontWeight: FontWeight.bold),
                     ),
-                    Icon(
-                      Icons.more_horiz,
-                      color: Colors.white,
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _new_message = 0; // Update the selected item index
+                        });
+                        const snackBar = SnackBar(
+                          content: Text('Transactions Updated'),
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                      },
+                      child: Icon(
+                        Icons.refresh,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
@@ -283,7 +294,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(
-            height: 5,
+            height: 15,
           ),
           //details
           Expanded(
@@ -304,7 +315,7 @@ class _HomePageState extends State<HomePage> {
                       Text("All transactions",
                           style: TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 20)),
-                      Icon(Icons.more_horiz)
+                      // Icon(Icons.more_horiz)
                     ],
                   ),
                   const SizedBox(
