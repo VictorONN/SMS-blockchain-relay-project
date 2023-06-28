@@ -46,6 +46,7 @@ dependencies:
   http: ^1.0.0
   flutter_bloc: ^8.1.3
   rxdart: ^0.27.7
+  dropdown_textfield: ^1.0.8
 
 dev_dependencies:
   flutter_test:

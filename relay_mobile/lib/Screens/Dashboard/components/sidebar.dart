@@ -1,12 +1,16 @@
 import 'dart:async';
 
+import 'package:another_flushbar/flushbar.dart';
+import 'package:dropdown_textfield/dropdown_textfield.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 import 'package:relay_mobile/Screens/Login/login_screen.dart';
 import 'package:relay_mobile/constants.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../services/apis.dart';
 import '../navigation_bloc/navigation_bloc.dart';
 import 'menu_item.dart';
 
@@ -22,14 +26,21 @@ class _SideBarState extends State<SideBar>
   late Stream<bool> isSidebarOpenedStream;
   late StreamSink<bool> isSidebarOpenedSink;
   final _animationDuration = const Duration(milliseconds: 500);
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  FocusNode searchFocusNode = FocusNode();
+  FocusNode textFieldFocusNode = FocusNode();
+  late SingleValueDropDownController _cnt;
+  double currency_rate = 0.00;
 
   String phone_number = "";
+  int? user_id;
 
   Future<void> getSharedPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-  
+
     setState(() {
       phone_number = prefs.getString("phone_number")!;
+      user_id = prefs.getInt("user_id");
     });
   }
 
@@ -37,6 +48,7 @@ class _SideBarState extends State<SideBar>
   void initState() {
     super.initState();
     getSharedPrefs();
+    _cnt = SingleValueDropDownController();
     _animationController =
         AnimationController(vsync: this, duration: _animationDuration);
     isSidebarOpenedStreamController = PublishSubject<bool>();
@@ -47,6 +59,7 @@ class _SideBarState extends State<SideBar>
   @override
   void dispose() {
     _animationController.dispose();
+    _cnt.dispose();
     isSidebarOpenedStreamController.close();
     isSidebarOpenedSink.close();
     super.dispose();
@@ -98,13 +111,12 @@ class _SideBarState extends State<SideBar>
                               fontSize: 20,
                               fontWeight: FontWeight.w800),
                         ),
-                        
-                      
                       ),
                       Divider(
                         height: 44,
                         thickness: 0.5,
-                        color: const Color.fromARGB(255, 6, 6, 6).withOpacity(0.3),
+                        color:
+                            const Color.fromARGB(255, 6, 6, 6).withOpacity(0.3),
                         indent: 12,
                         endIndent: 32,
                       ),
@@ -119,9 +131,178 @@ class _SideBarState extends State<SideBar>
                         },
                       ),
                       MenuItem(
-                        icon: Icons.person,
-                        title: "Settings",
+                        icon: Icons.rate_review,
+                        title: "Set Rate",
                         onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                scrollable: true,
+                                title: const Text("Set Currency Rate"),
+                                content: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20),
+                                    child: Form(
+                                      key: _formKey,
+                                      child: DropDownTextField(
+                                        // initialValue: "name4",
+                                        controller: _cnt,
+                                        clearOption: true,
+                                        // enableSearch: true,
+                                        // dropdownColor: Colors.green,
+                                        // searchDecoration: const InputDecoration(
+                                        //     hintText:
+                                        //         "enter your custom hint text here"),
+                                        validator: (value) {
+                                          if (value == null) {
+                                            return "Required field";
+                                          } else {
+                                            return null;
+                                          }
+                                        },
+                                        dropDownItemCount: 2,
+
+                                        dropDownList: const [
+                                          DropDownValueModel(
+                                              name: 'USD', value: "usd"),
+                                          DropDownValueModel(
+                                              name: 'Ksh', value: "ksh"),
+                                        ],
+                                        onChanged: (val) {
+                                          print(val.value);
+                                          if (val.value == "usd") {
+                                            setState(() {
+                                              currency_rate = 140.00;
+                                            });
+                                          } else {
+                                            setState(() {
+                                              currency_rate = 100.00;
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    )
+
+                                    // child: Form(
+                                    //   child: Column(
+                                    //     children: [
+                                    //       TextFormField(
+                                    //         decoration: const InputDecoration(
+                                    //           labelText: "",
+                                    //           icon: Icon(Icons.account_box),
+                                    //         ),
+                                    //       ),
+                                    //     ],
+                                    //   ),
+                                    // ),
+                                    ),
+                                actions: [
+                                  ElevatedButton(
+                                    child: const Text("submit"),
+                                    onPressed: () async {
+                                      print(currency_rate);
+                                      await ApiService()
+                                          .updateUser(user_id, currency_rate)
+                                          .then((value) {
+                                        if (value != null) {
+                                          Flushbar(
+                                            titleColor: Colors.white,
+                                            flushbarPosition:
+                                                FlushbarPosition.TOP,
+                                            flushbarStyle:
+                                                FlushbarStyle.FLOATING,
+                                            reverseAnimationCurve:
+                                                Curves.decelerate,
+                                            forwardAnimationCurve:
+                                                Curves.elasticOut,
+                                            backgroundColor:
+                                                const Color.fromARGB(
+                                                    255, 43, 160, 47),
+                                            isDismissible: false,
+                                            duration:
+                                                const Duration(seconds: 4),
+                                            icon: const Icon(
+                                              Icons.check,
+                                              color: Colors.white,
+                                            ),
+                                            showProgressIndicator: true,
+                                            progressIndicatorBackgroundColor:
+                                                Colors.blueGrey,
+                                            titleText: const Text(
+                                              "Success",
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 20.0,
+                                                  color: Colors.white,
+                                                  fontFamily:
+                                                      "ShadowsIntoLightTwo"),
+                                            ),
+                                            messageText: const Text(
+                                              "Rate Set succesful!",
+                                              style: TextStyle(
+                                                  fontSize: 18.0,
+                                                  color: Colors.white,
+                                                  fontFamily:
+                                                      "ShadowsIntoLightTwo"),
+                                            ),
+                                          ).show(context);
+                                          context.loaderOverlay.hide();
+
+                                          context.loaderOverlay.hide();
+                                        } else {
+                                          Flushbar(
+                                            titleColor: Colors.white,
+                                            flushbarPosition:
+                                                FlushbarPosition.TOP,
+                                            flushbarStyle:
+                                                FlushbarStyle.FLOATING,
+                                            reverseAnimationCurve:
+                                                Curves.decelerate,
+                                            forwardAnimationCurve:
+                                                Curves.elasticOut,
+                                            backgroundColor:
+                                                const Color.fromARGB(
+                                                    255, 219, 54, 42),
+                                            isDismissible: false,
+                                            duration:
+                                                const Duration(seconds: 4),
+                                            icon: const Icon(
+                                              Icons.cancel_outlined,
+                                              color: Colors.white,
+                                            ),
+                                            showProgressIndicator: true,
+                                            progressIndicatorBackgroundColor:
+                                                Colors.blueGrey,
+                                            titleText: const Text(
+                                              "Failed",
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 20.0,
+                                                  color: Colors.white,
+                                                  fontFamily:
+                                                      "ShadowsIntoLightTwo"),
+                                            ),
+                                            messageText: const Text(
+                                              "Failed Updating",
+                                              style: TextStyle(
+                                                  fontSize: 18.0,
+                                                  color: Colors.white,
+                                                  fontFamily:
+                                                      "ShadowsIntoLightTwo"),
+                                            ),
+                                          ).show(context);
+
+                                          context.loaderOverlay.hide();
+                                        }
+                                      });
+                                      // your code
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          );
                           // onIconPressed();
                           // BlocProvider.of<NavigationBloc>(context)
                           //     .add(NavigationEvents.MyAccountClickedEvent);
@@ -144,7 +325,7 @@ class _SideBarState extends State<SideBar>
                 ),
               ),
               Align(
-                alignment: const Alignment(0,-0.90),
+                alignment: const Alignment(0, -0.90),
                 child: GestureDetector(
                   onTap: () {
                     onIconPressed();

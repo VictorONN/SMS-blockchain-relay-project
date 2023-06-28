@@ -33,6 +33,7 @@ class _HomePageState extends State<HomePage> {
   String phone_number = "";
   int wallet_amount = 0;
   String till_number = "";
+  int block_amount = 0;
 
   @override
   void initState() {
@@ -44,107 +45,106 @@ class _HomePageState extends State<HomePage> {
   onMessage(SmsMessage message) async {
     print("Incoming message");
 
-      SharedPreferences prefs = await SharedPreferences.getInstance();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
 
-      // Example: Extracting a specific keyword
-      if (message.body!.startsWith('#sendrelay')) {
-              String? sender = message.address;
-              String? body = message.body;
-              int? agent_id = prefs.getInt("user_id");
-        // Extract additional information or perform actions based on the keyword
-        // Example: Extract a value after the keyword
-        // print(body.indexOf('#receiver'));
-        String? receiver = body
-            ?.substring(body.indexOf('#receiver') + '#receiver'.length)
-            .trim();
-        String? amount =
-            body?.substring(body.indexOf('#amount') + '#amount'.length).trim();
+    // Example: Extracting a specific keyword
+    if (message.body!.startsWith('#send')) {
+      String? sender = message.address;
+      String? body = message.body;
+      int? agent_id = prefs.getInt("user_id");
+      // Extract additional information or perform actions based on the keyword
+      // Example: Extract a value after the keyword
+      // print(body.indexOf('#receiver'));
+      String? receiver = body
+          ?.substring(body.indexOf('#receiver') + '#receiver'.length)
+          .trim();
+      String? amount =
+          body?.substring(body.indexOf('#amount') + '#amount'.length).trim();
 
-        // Print or use the extracted information as needed
-        print('Received message from $sender');
-        print('Receiver value: $receiver');
-        print('amount value: $amount');
-        print('agent id: $agent_id');
+      // Print or use the extracted information as needed
+      print('Received message from $sender');
+      print('Receiver value: $receiver');
+      print('amount value: $amount');
+      print('agent id: $agent_id');
 
-        await ApiService()
-            .sendRelay(sender!, receiver!.split('\n')[0].trim(), amount!, agent_id!)
-            .then((value) {
-          if (value != null) {
-              var snackBar = SnackBar(
-                                content: Text(value.message),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(snackBar);
-            context.loaderOverlay.hide();
-          } else {
-            context.loaderOverlay.hide();
+      await ApiService()
+          .sendRelay(
+              sender!, receiver!.split('\n')[0].trim(), amount!, agent_id!)
+          .then((value) {
+        if (value != null) {
+          var snackBar = SnackBar(
+            content: Text(value.message),
+          );
+          ScaffoldMessenger.of(context).showSnackBar(snackBar);
+          context.loaderOverlay.hide();
+        } else {
+          context.loaderOverlay.hide();
 
-            Future.delayed(const Duration(milliseconds: 1000), () {
-              Navigator.pop(context);
-            });
-          }
-        });
-      }else if (message.body!.startsWith('#withdrawrelay')) {
-        String? sender = message.address;
-              String? body = message.body;
-              int? agent_id = prefs.getInt("user_id");
-        // Extract additional information or perform actions based on the keyword
-        // Example: Extract a value after the keyword
-        // print(body.indexOf('#receiver'));
-        String? receiver = body
-            ?.substring(body.indexOf('#receiver') + '#receiver'.length)
-            .trim();
-        String? amount =
-            body?.substring(body.indexOf('#amount') + '#amount'.length).trim();
+          Future.delayed(const Duration(milliseconds: 1000), () {
+            Navigator.pop(context);
+          });
+        }
+      });
+    } else if (message.body!.startsWith('#withdraw')) {
+      String? sender = message.address;
+      String? body = message.body;
+      int? agent_id = prefs.getInt("user_id");
+      // Extract additional information or perform actions based on the keyword
+      // Example: Extract a value after the keyword
+      // print(body.indexOf('#receiver'));
+      String? receiver = body
+          ?.substring(body.indexOf('#receiver') + '#receiver'.length)
+          .trim();
+      String? amount =
+          body?.substring(body.indexOf('#amount') + '#amount'.length).trim();
 
-        // Print or use the extracted information as needed
-        print('Received message from $sender');
-        print('Receiver value: $receiver');
-        print('amount value: $amount');
-        print('agent id: $agent_id');
+      // Print or use the extracted information as needed
+      print('Received message from $sender');
+      print('Receiver value: $receiver');
+      print('amount value: $amount');
+      print('agent id: $agent_id');
 
-        await ApiService()
-            .withdrawRelay(sender!, receiver!.split('\n')[0].trim(), amount!, agent_id!)
-            .then((value) {
-          if (value != null) {
-            var snackBar = SnackBar(
-                                content: Text(value.message),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(snackBar);
-            context.loaderOverlay.hide();
-          } else {
-            context.loaderOverlay.hide();
+      await ApiService()
+          .withdrawRelay(
+              sender!, receiver!.split('\n')[0].trim(), amount!, agent_id!)
+          .then((value) {
+        if (value != null) {
+          var snackBar = SnackBar(
+            content: Text(value.message),
+          );
+          ScaffoldMessenger.of(context).showSnackBar(snackBar);
+          context.loaderOverlay.hide();
+        } else {
+          context.loaderOverlay.hide();
 
-            Future.delayed(const Duration(milliseconds: 1000), () {
-              Navigator.pop(context);
-            });
-          }
-        });
-  
-    }else if (message.body!.startsWith('#registerrelay')) {
-        String? sender = message.address;
+          Future.delayed(const Duration(milliseconds: 1000), () {
+            Navigator.pop(context);
+          });
+        }
+      });
+    } else if (message.body!.startsWith('#registerrelay')) {
+      String? sender = message.address;
 
+      // Print or use the extracted information as needed
+      print('Received message from $sender');
 
-        // Print or use the extracted information as needed
-        print('Received message from $sender');
+      await ApiService()
+          .registerRelay(sender!.split('\n')[0].trim())
+          .then((value) {
+        if (value != null) {
+          var snackBar = SnackBar(
+            content: Text(value.message),
+          );
+          ScaffoldMessenger.of(context).showSnackBar(snackBar);
+          context.loaderOverlay.hide();
+        } else {
+          context.loaderOverlay.hide();
 
-        await ApiService()
-            .registerRelay(sender!.split('\n')[0].trim())
-            .then((value) {
-          if (value != null) {
-            var snackBar = SnackBar(
-                                content: Text(value.message),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(snackBar);
-            context.loaderOverlay.hide();
-          } else {
-            context.loaderOverlay.hide();
-
-            Future.delayed(const Duration(milliseconds: 1000), () {
-              Navigator.pop(context);
-            });
-          }
-        });
-  
+          Future.delayed(const Duration(milliseconds: 1000), () {
+            Navigator.pop(context);
+          });
+        }
+      });
     }
   }
 
@@ -156,7 +156,7 @@ class _HomePageState extends State<HomePage> {
       if (value != null) {
         setState(() {
           wallet_amount = value.amount;
-          till_number = value.tillNumber;
+          block_amount = value.blockAmount;
         });
 
         context.loaderOverlay.hide();
@@ -363,7 +363,7 @@ class _HomePageState extends State<HomePage> {
                           fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      "My Till Number ",
+                      "My BlockChain balance ",
                       // ignore: prefer_const_constructors
                       style: TextStyle(
                           color: Colors.white,
@@ -387,7 +387,7 @@ class _HomePageState extends State<HomePage> {
                           fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      "${till_number}",
+                      "USD ${block_amount}",
                       // ignore: prefer_const_constructors
                       style: TextStyle(
                           color: Colors.white,
@@ -513,36 +513,37 @@ class _HomePageState extends State<HomePage> {
                                       padding:
                                           const EdgeInsets.only(bottom: 10.0),
                                       child: Container(
-                                        decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius:
-                                                BorderRadius.circular(16)),
-                                        child: DetailedCard(
+                                          decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(16)),
+                                          child: DetailedCard(
                                             title: "${trans[index].purpose}",
                                             subtitle: "Via - Relay",
-                                            description: "Initator : ${trans[index].sender}\n\nReceiver :${trans[index].receiver}\n\nAmount : Ksh ${trans[index].amount}",
+                                            description:
+                                                "Initator : ${trans[index].sender}\n\nReceiver :${trans[index].receiver}\n\nAmount : Ksh ${trans[index].amount}",
                                           )
 
-                                        // ListTile(
-                                        //   // onTap: () => initPlatformState(),
-                                        //   // leading: Icon(Icons.message),
-                                        //   title: Text(
-                                        //     "${trans[index].sender} - Ksh ${trans[index].amount}",
-                                        //     style: const TextStyle(
-                                        //         fontSize: 17,
-                                        //         fontWeight: FontWeight.bold),
-                                        //   ),
-                                        //   subtitle: Text(
-                                        //       "Via - ${trans[index].purpose}"),
-                                        //   // trailing: Text('${trans[index].amount}'),
-                                        //   // trailing: Text(
-                                        //   //   DateFormat('MM/dd/yyyy, hh:mm a')
-                                        //   //       .format(DateTime
-                                        //   //           .fromMillisecondsSinceEpoch(
-                                        //   //               messages[index].date!)),
-                                        //   // ),
-                                        // ),
-                                      ));
+                                          // ListTile(
+                                          //   // onTap: () => initPlatformState(),
+                                          //   // leading: Icon(Icons.message),
+                                          //   title: Text(
+                                          //     "${trans[index].sender} - Ksh ${trans[index].amount}",
+                                          //     style: const TextStyle(
+                                          //         fontSize: 17,
+                                          //         fontWeight: FontWeight.bold),
+                                          //   ),
+                                          //   subtitle: Text(
+                                          //       "Via - ${trans[index].purpose}"),
+                                          //   // trailing: Text('${trans[index].amount}'),
+                                          //   // trailing: Text(
+                                          //   //   DateFormat('MM/dd/yyyy, hh:mm a')
+                                          //   //       .format(DateTime
+                                          //   //           .fromMillisecondsSinceEpoch(
+                                          //   //               messages[index].date!)),
+                                          //   // ),
+                                          // ),
+                                          ));
                                 });
                           }
                         }),

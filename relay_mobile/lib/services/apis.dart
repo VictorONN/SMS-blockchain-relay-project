@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:ffi';
 
 import 'package:relay_mobile/models/all_transactions.dart';
 import 'package:relay_mobile/models/registration.dart';
+import 'package:relay_mobile/models/update_user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:http/http.dart' as http;
@@ -12,7 +14,6 @@ import '../models/transactions_init.dart';
 import '../models/user_details.dart';
 
 class ApiService {
-
   Future<Login?> login(String phone, String password) async {
     final Map<String, dynamic> loginData = {
       'phone_number': phone,
@@ -39,8 +40,8 @@ class ApiService {
     }
   }
 
-  Future<Registration?> register(String phone,
-      String till_number, String password) async {
+  Future<Registration?> register(
+      String phone, String till_number, String password) async {
     final Map<String, dynamic> registerData = {
       "till_number": till_number,
       "password": password,
@@ -96,10 +97,9 @@ class ApiService {
 
     final String? token = prefs.getString('access');
     var client = http.Client();
-  
 
-    final response = await client
-        .get(Uri.parse('${api_url}transactions/all/'), headers: {
+    final response =
+        await client.get(Uri.parse('${api_url}transactions/all/'), headers: {
       'Content-Type': 'application/json',
       // 'Authorization': 'Bearer $token'
     }).catchError(
@@ -116,15 +116,15 @@ class ApiService {
     }
   }
 
-  Future<TransactionInit?> sendRelay(String sender,
-      String receiver, String amount,int agent_id) async {
-            final SharedPreferences prefs = await SharedPreferences.getInstance();
+  Future<TransactionInit?> sendRelay(
+      String sender, String receiver, String amount, int agent_id) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     final Map<String, dynamic> registerData = {
-      "sender":sender,
-      "receiver":receiver,
-      "amount":amount,
-      "agent_id":agent_id
+      "sender": sender,
+      "receiver": receiver,
+      "amount": amount,
+      "agent_id": agent_id
     };
     final String? token = prefs.getString('access');
     var client = http.Client();
@@ -149,15 +149,15 @@ class ApiService {
     }
   }
 
-    Future<TransactionInit?> withdrawRelay(String sender,
-      String receiver, String amount,int agent_id) async {
-            final SharedPreferences prefs = await SharedPreferences.getInstance();
+  Future<TransactionInit?> withdrawRelay(
+      String sender, String receiver, String amount, int agent_id) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     final Map<String, dynamic> registerData = {
-      "sender":sender,
-      "receiver":receiver,
-      "amount":amount,
-      "agent_id":agent_id
+      "sender": sender,
+      "receiver": receiver,
+      "amount": amount,
+      "agent_id": agent_id
     };
     final String? token = prefs.getString('access');
     var client = http.Client();
@@ -182,12 +182,11 @@ class ApiService {
     }
   }
 
-
   Future<TransactionInit?> registerRelay(String sender) async {
-            final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     final Map<String, dynamic> registerData = {
-      "phone_number":sender,
+      "phone_number": sender,
     };
     final String? token = prefs.getString('access');
     var client = http.Client();
@@ -207,6 +206,29 @@ class ApiService {
 
     if (response.statusCode == 200) {
       return transactionInitFromJson(response.body);
+    } else {
+      return null;
+    }
+  }
+
+  Future<UpdateUser?> updateUser(userid, currency_rate) async {
+    final Map<String, dynamic> updateData = {'currency_rate': currency_rate};
+    var client = http.Client();
+
+    final response = await client
+        .patch(Uri.parse('${api_url}user/by_id/${userid}'),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: json.encode(updateData))
+        .catchError(
+      (error) {
+        print(error);
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return updateUserFromJson(response.body);
     } else {
       return null;
     }
