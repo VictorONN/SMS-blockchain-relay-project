@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import '../constants.dart';
 import '../models/login.dart';
 import '../models/transactions_init.dart';
+import '../models/userBalance.dart';
 import '../models/user_details.dart';
 
 class ApiService {
@@ -109,7 +110,7 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      print(response.body);
+      // print(response.body);
       return transactionsFromJson(response.body);
     } else {
       throw Exception('Failed to load transaction');
@@ -229,6 +230,27 @@ class ApiService {
 
     if (response.statusCode == 200) {
       return updateUserFromJson(response.body);
+    } else {
+      return null;
+    }
+  }
+
+  Future<UserBalance?> userBalance(String sender) async {
+    var client = http.Client();
+
+    final response = await client
+        .get(Uri.parse('${api_url}balance/by_phone/${sender}'),
+            headers: {
+              'Content-Type': 'application/json',
+            },)
+        .catchError(
+      (error) {
+        print(error);
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return userBalanceFromJson(response.body);
     } else {
       return null;
     }

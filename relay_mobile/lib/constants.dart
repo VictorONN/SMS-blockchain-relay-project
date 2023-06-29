@@ -8,4 +8,4 @@ const kPrimaryLightColor = Color(0xFF7CDE95);
 const double defaultPadding = 16.0;
 
 
-var api_url = "https://9f50-41-215-89-226.ngrok-free.app/";
+var api_url = "https://32a5-41-139-249-97.ngrok-free.app/";

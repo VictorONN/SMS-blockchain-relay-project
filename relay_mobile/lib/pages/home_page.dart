@@ -43,7 +43,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   onMessage(SmsMessage message) async {
-    print("Incoming message");
+    // print("Incoming message");
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -62,10 +62,10 @@ class _HomePageState extends State<HomePage> {
           body?.substring(body.indexOf('#amount') + '#amount'.length).trim();
 
       // Print or use the extracted information as needed
-      print('Received message from $sender');
-      print('Receiver value: $receiver');
-      print('amount value: $amount');
-      print('agent id: $agent_id');
+      // print('Received message from $sender');
+      // print('Receiver value: $receiver');
+      // print('amount value: $amount');
+      // print('agent id: $agent_id');
 
       await ApiService()
           .sendRelay(
@@ -99,10 +99,10 @@ class _HomePageState extends State<HomePage> {
           body?.substring(body.indexOf('#amount') + '#amount'.length).trim();
 
       // Print or use the extracted information as needed
-      print('Received message from $sender');
-      print('Receiver value: $receiver');
-      print('amount value: $amount');
-      print('agent id: $agent_id');
+      // print('Received message from $sender');
+      // print('Receiver value: $receiver');
+      // print('amount value: $amount');
+      // print('agent id: $agent_id');
 
       await ApiService()
           .withdrawRelay(
@@ -122,31 +122,30 @@ class _HomePageState extends State<HomePage> {
           });
         }
       });
-    } else if (message.body!.startsWith('#registerrelay')) {
+    } else if (message.body!.startsWith('#help')) {
+      // print("help");
+            telephony.sendSms(
+            to: message.address!,
+            message: "Welcome to SMS RELAY, your one route to blockchain technology ");
+
+      }else if(message.body!.startsWith('#balance')){
       String? sender = message.address;
 
       // Print or use the extracted information as needed
-      print('Received message from $sender');
+      // print('Received message from $sender');
 
       await ApiService()
-          .registerRelay(sender!.split('\n')[0].trim())
+          .userBalance(sender!.split('\n')[0].trim())
           .then((value) {
-        if (value != null) {
-          var snackBar = SnackBar(
-            content: Text(value.message),
-          );
-          ScaffoldMessenger.of(context).showSnackBar(snackBar);
-          context.loaderOverlay.hide();
-        } else {
-          context.loaderOverlay.hide();
-
-          Future.delayed(const Duration(milliseconds: 1000), () {
-            Navigator.pop(context);
-          });
-        }
-      });
+            // print(value?.amount);
+            telephony.sendSms(
+            to: message.address!,
+            message: "Hi there, your Ksh amount is ${value?.amount} and your USD amount is ${value?.blockAmount}"
+            );
+            });
+      }
     }
-  }
+  
 
   getUserDetails() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
