@@ -25,17 +25,13 @@ mod Mpesavault {
     // new relay registering 
     #[external]   
     fn register() {
-        //send some funds to the wallet 
-        IERC20Dispatcher {contract_address: 0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8}.transfer_from(caller, this_contract, u256_from_felt252(amount));
-
-        let caller = get_caller_address();
-        registered_relays::write(caller, true);
 
         let this_contract = get_contract_address();
-        
-        
-        return ();  
-        
+        let caller = get_caller_address();
+        //send some funds to the wallet 
+        IERC20Dispatcher {contract_address: 0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8}.transfer_from(caller, this_contract, u256_from_felt252(amount));
+        registered_relays::write(caller, true);         
+        return ();   
         }
 
 
