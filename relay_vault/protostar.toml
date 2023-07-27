@@ -2,7 +2,7 @@
 protostar-version = "0.14.0"
 
 [contracts]
-mpesavault = ["src"]
+relayvault = ["src"]
 interface = ["src"]
 
 
