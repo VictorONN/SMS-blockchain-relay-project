@@ -6,7 +6,7 @@ trait MpesavaultTrait<T> {
     fn register(ref self: T, amount: u256);
     fn send(ref self: T, amount: u256, from: starknet::ContractAddress, to: starknet::ContractAddress);
     fn withdraw(ref self: T, amount: u256);
-    fn view_relays(self: @T) -> Array<felt252>;
+    // fn view_relays(self: @T) -> Array<felt252>;
     fn view_balance(self: @T) -> u256;
 }
 
@@ -29,25 +29,33 @@ mod Relayvault {
     #[derive(Drop, starknet::Event)]
     struct Sent {
         #[key]
-        relay: starknet::ContractAddress,
-        #[key]
-        to: starknet::ContractAddress,
+        relay_to: starknet::ContractAddress,
+        // #[key]
+        // to: starknet::ContractAddress,
         #[key]
         amount: u256
     }
 
     #[storage]
     struct Storage {
+        //verified relays
         registered_relays: LegacyMap<ContractAddress, bool>,
+        //relay balances
         relay_balances: LegacyMap<ContractAddress, u256>,
-        transactions: LegacyMap<felt252, SendTransaction>,
+        //trusted admin address 
         owner_address: starknet::ContractAddress,
+        //token: in our case ERC20
         token: IERC20ABIDispatcher,
-        relays: ArrayTrait::felt252,
+        //Is it possible to save arrays in storage?? 
+        // relays: ArrayTrait::felt252,
+        //total amount in vault 
         amount_in_vault: u256,
-        fees_collected: u256, 
+        //total fees collected over time 
+        fees_collected: u256,
+        // fee percentage is a constant, maybe should not be in storage??  
         fee_percentage: u256,
-        withdraw_timelock: u64
+        //amount of time it takes to confirm exit of relay
+        exit_timelock: u64
     }
 
     #[constructor]
@@ -58,17 +66,17 @@ mod Relayvault {
         self.owner_address.write(caller);
         self.token.write(IERC20ABIDispatcher {contract_address: token_address});
         self.fee_percentage.write(fee_percentage);
-        self.withdraw_timelock.write(withdraw_time);
+        self.exit_timelock.write(withdraw_time);
     }
 
     #[external(v0)]
     impl Mpesavault of super::MpesavaultTrait<ContractState> {
 
-        fn view_relays(self: @ContractState) -> Array<felt252>{
-            // let mut current_relays: Array<felt252> = self.relays.read();
-            // current_relays 
-            self.relays.read()
-        }
+        // fn view_relays(self: @ContractState) -> Array<felt252>{
+        //     // let mut current_relays: Array<felt252> = self.relays.read();
+        //     // current_relays 
+        //     // self.relays.read()
+        // }
 
         fn view_balance(self: @ContractState) -> u256 {
             self.amount_in_vault.read()
@@ -91,7 +99,7 @@ mod Relayvault {
             let current_amount = self.amount_in_vault.read();
             self.amount_in_vault.write(current_amount + amount);
             // how to write to an array in storage
-            self.relays.write(caller);
+            // self.relays.write(caller);
 
             return ();   
         }
@@ -101,8 +109,6 @@ mod Relayvault {
 
             self.check_admin();
             let this_contract = get_contract_address();
-            
-            // ' );
 
             let original_balance = self.relay_balances.read(from);
 
@@ -116,11 +122,12 @@ mod Relayvault {
                 amount
             );
 
-            self.relay_balances.write(from, original_balance - amount); 
+            // self.relay_balances.write(from, original_balance - amount);
+            // self.relay_balances.write(to, original_balance + amount); 
 
             self.emit(Event::Sent(Sent {
-                relay: from,
-                to: to,
+                relay_to: to,
+                // to: to,
                 amount: amount,
             }));
 
@@ -140,7 +147,7 @@ mod Relayvault {
             let current_amount = self.amount_in_vault.read();
             self.amount_in_vault.write(current_amount - amount);
             let current_timestamp: u64 = get_block_timestamp();
-            let withdraw_period: u64 = self.withdraw_timelock.read();
+            let withdraw_period: u64 = self.exit_timelock.read();
             if (get_block_timestamp() > current_timestamp + withdraw_period) {
                 self.token.read().transfer_from(this_contract, caller, amount);
             }
@@ -176,13 +183,12 @@ mod Relayvault {
     impl IERC20ABIImpl of IERC20ABI<ContractState> {
         fn transfer_from(ref self: ContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256)
             {
-                let caller = get_caller_address();
-                self.token.read().balance_of(caller) - amount;
+                self.token.read().balance_of(sender) - amount;
                 self.token.read().balance_of(recipient) + amount;
             }
 
             fn balance_of(self: @ContractState, account: ContractAddress) -> u256 {
-                self.token.read(account)
+                self.token.read().balance_of(account)
 
             }
 
