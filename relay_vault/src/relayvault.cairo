@@ -6,10 +6,8 @@ trait MpesavaultTrait<T> {
     fn register(ref self: T, amount: u256);
     fn send(ref self: T, amount: u256, from: starknet::ContractAddress, to: starknet::ContractAddress);
     fn withdraw(ref self: T, amount: u256);
-    // fn view_relays(self: @T) -> Array<felt252>;
     fn view_balance(self: @T) -> u256;
 }
-
 
 #[starknet::contract]
 mod Relayvault {
@@ -30,8 +28,6 @@ mod Relayvault {
     struct Sent {
         #[key]
         relay_to: starknet::ContractAddress,
-        // #[key]
-        // to: starknet::ContractAddress,
         #[key]
         amount: u256
     }
@@ -46,8 +42,6 @@ mod Relayvault {
         owner_address: starknet::ContractAddress,
         //token: in our case ERC20
         token: IERC20ABIDispatcher,
-        //Is it possible to save arrays in storage?? 
-        // relays: ArrayTrait::felt252,
         //total amount in vault 
         amount_in_vault: u256,
         //total fees collected over time 
@@ -72,17 +66,9 @@ mod Relayvault {
     #[external(v0)]
     impl Mpesavault of super::MpesavaultTrait<ContractState> {
 
-        // fn view_relays(self: @ContractState) -> Array<felt252>{
-        //     // let mut current_relays: Array<felt252> = self.relays.read();
-        //     // current_relays 
-        //     // self.relays.read()
-        // }
-
         fn view_balance(self: @ContractState) -> u256 {
             self.amount_in_vault.read()
-        }
-
-        
+        }        
 
         // @dev How individual relays register to the vault by sending a certain amount of money
         fn register(ref self: ContractState, amount: u256) {
@@ -98,23 +84,26 @@ mod Relayvault {
             self.registered_relays.write(caller, true);   
             let current_amount = self.amount_in_vault.read();
             self.amount_in_vault.write(current_amount + amount);
-            // how to write to an array in storage
-            // self.relays.write(caller);
-
             return ();   
         }
         
-        // @dev The 'trusted' admin sends money to receiver relay after receiving confirmation of offchain transfer of funds to a certain relay
+        // @dev The 'trusted' admin, as an intermediary, sends tokens to receiver relay. Balance of sender relay is deducted while receiver relay is added
         fn send(ref self: ContractState, amount: u256, from: starknet::ContractAddress, to: starknet::ContractAddress) {
 
             self.check_admin();
+            
             let this_contract = get_contract_address();
 
-            let original_balance = self.relay_balances.read(from);
+            let caller = get_caller_address();
+
+            assert(self.relay_balances.read(caller) > amount, 'No liquidity');
+
+            //confirm to is a registered relay 
+            assert(self.registered_relays.read(to) == true, 'to is not a relay');
 
             // TODO: Subtract fee from amount to be sent
 
-            self.check_balance_helper(amount);           
+            // self.check_balance_helper(amount);           
 
             self.token.read().transfer_from(
                 this_contract, 
@@ -122,37 +111,32 @@ mod Relayvault {
                 amount
             );
 
-            // self.relay_balances.write(from, original_balance - amount);
-            // self.relay_balances.write(to, original_balance + amount); 
+            self.relay_balances.write(from, self.relay_balances.read(from) - amount);
+            self.relay_balances.write(to, self.relay_balances.read(to) + amount); 
 
             self.emit(Event::Sent(Sent {
                 relay_to: to,
-                // to: to,
                 amount: amount,
             }));
-
-            // self.emit(Sent{
-            //     relay: from, 
-            //     to: to, 
-            //     amount: amount
-            // })
         }
         
-        // @dev Relay can withdraw their funds and stop being a relay, after a certain amount of time has passed  
+        // @dev A relay can withdraw their funds and stop being a relay. Their is a cool down period of time until funds actually exit the contract  
         fn withdraw (ref self: ContractState, amount: u256) {
+
             let this_contract = get_contract_address();
             let caller = get_caller_address();
+            let withdraw_period: u64 = self.exit_timelock.read();
+
             self.check_balance_helper(amount);
             self.relay_balances.write(caller, self.relay_balances.read(caller) - amount);
+
             let current_amount = self.amount_in_vault.read();
             self.amount_in_vault.write(current_amount - amount);
-            let current_timestamp: u64 = get_block_timestamp();
-            let withdraw_period: u64 = self.exit_timelock.read();
-            if (get_block_timestamp() > current_timestamp + withdraw_period) {
+            
+            if (get_block_timestamp() > get_block_timestamp() + withdraw_period) {
                 self.token.read().transfer_from(this_contract, caller, amount);
-            }
+            } 
             return();
-
         }
 
     }
@@ -187,9 +171,9 @@ mod Relayvault {
                 self.token.read().balance_of(recipient) + amount;
             }
 
-            fn balance_of(self: @ContractState, account: ContractAddress) -> u256 {
+        fn balance_of(self: @ContractState, account: ContractAddress) -> u256 
+            {
                 self.token.read().balance_of(account)
-
             }
 
     }
