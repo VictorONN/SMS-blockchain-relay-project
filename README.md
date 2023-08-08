@@ -7,5 +7,4 @@
 
 - Anyone can set up an sms relay and allow their contacts to transmit sms to their phone, relay then parses payload
   
-This ideas borrows heavily from a local startup which has implemented the same for other blockchains (Celo and Stellar)  https://twitter.com/CeloOrg/status/1519382764537143296. 
-Building it on Starknet.    
+-Sms go two ways, for command parsing and message notifications to distributed nodes/relay runners    
