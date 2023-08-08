@@ -7,4 +7,6 @@
 
 - Anyone can set up an sms relay and allow their contacts to transmit sms to their phone, relay then parses payload
   
--Sms go two ways, for command parsing and message notifications to distributed nodes/relay runners    
+- Sms go two ways, for command parsing and message notifications to distributed nodes/relay runners    
+  
+ 
