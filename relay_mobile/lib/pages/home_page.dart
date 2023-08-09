@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:relay_mobile/Screens/Dashboard/navigation_bloc/navigation_bloc.dart';
@@ -29,53 +31,59 @@ class _HomePageState extends State<HomePage> {
   List<Transactions> trans = [];
 
   final telephony = Telephony.instance;
-  int _new_message = 0;
   String phone_number = "";
   int wallet_amount = 0;
-  String till_number = "";
   int block_amount = 0;
 
   @override
   void initState() {
     super.initState();
     getUserDetails();
+    print("init");
     initPlatformState();
   }
 
+  double? extractValue(String pattern, String input) {
+    RegExp regex = RegExp(pattern);
+    Match? match = regex.firstMatch(input);
+
+    if (match != null && match.groupCount >= 1) {
+      String extractedValue = match.group(1)!;
+      return double.tryParse(extractedValue);
+    } else {
+      return null;
+    }
+  }
+            final SmsSendStatusListener listener = (SendStatus status) {
+              print(status);
+              // Handle the status
+            };
+
   onMessage(SmsMessage message) async {
-    // print("Incoming message");
-
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? sender = message.address;
+    int? agent_id = prefs.getInt("user_id");
 
-    // Example: Extracting a specific keyword
-    if (message.body!.startsWith('#send')) {
-      String? sender = message.address;
-      String? body = message.body;
-      int? agent_id = prefs.getInt("user_id");
-      // Extract additional information or perform actions based on the keyword
-      // Example: Extract a value after the keyword
-      // print(body.indexOf('#receiver'));
-      String? receiver = body
-          ?.substring(body.indexOf('#receiver') + '#receiver'.length)
-          .trim();
-      String? amount =
-          body?.substring(body.indexOf('#amount') + '#amount'.length).trim();
+    double? depositValue = extractValue(r'#d#(\d+)', message.body!);
+    if (depositValue != null) {
+      print("Deposit value: $depositValue");
 
-      // Print or use the extracted information as needed
-      // print('Received message from $sender');
-      // print('Receiver value: $receiver');
-      // print('amount value: $amount');
-      // print('agent id: $agent_id');
+      int? depositRate = prefs.getInt("deposit_rate")!;
+      // double divisionDepositResult = depositValue / depositRate; // send to block chain the divided result
 
       await ApiService()
-          .sendRelay(
-              sender!, receiver!.split('\n')[0].trim(), amount!, agent_id!)
+          .sendRelay(sender!.substring(1), depositValue, agent_id!)
           .then((value) {
         if (value != null) {
           var snackBar = SnackBar(
             content: Text(value.message),
           );
           ScaffoldMessenger.of(context).showSnackBar(snackBar);
+          telephony.sendSms(
+              to: sender,
+              isMultipart: true, statusListener: listener,
+              message:
+                  "\$2.74 ($depositValue kshs) has been deposited. Your on-chain balance is \$2.74(290 kshs)");
           context.loaderOverlay.hide();
         } else {
           context.loaderOverlay.hide();
@@ -85,77 +93,80 @@ class _HomePageState extends State<HomePage> {
           });
         }
       });
-    } else if (message.body!.startsWith('#withdraw')) {
-      String? sender = message.address;
-      String? body = message.body;
-      int? agent_id = prefs.getInt("user_id");
-      // Extract additional information or perform actions based on the keyword
-      // Example: Extract a value after the keyword
-      // print(body.indexOf('#receiver'));
-      String? receiver = body
-          ?.substring(body.indexOf('#receiver') + '#receiver'.length)
-          .trim();
-      String? amount =
-          body?.substring(body.indexOf('#amount') + '#amount'.length).trim();
+    } else {
+      double? withdrawValue = extractValue(r'#w#(\d+)', message.body!);
+      if (withdrawValue != null) {
+        print("Withdraw value: $withdrawValue");
 
-      // Print or use the extracted information as needed
-      // print('Received message from $sender');
-      // print('Receiver value: $receiver');
-      // print('amount value: $amount');
-      // print('agent id: $agent_id');
+        int? withdrawRate = prefs.getInt("withdraw_rate")!;
+        // double divisionWithdrawResult = withdrawValue / withdrawRate; // from block chain divide the result wiht the rate
 
-      await ApiService()
-          .withdrawRelay(
-              sender!, receiver!.split('\n')[0].trim(), amount!, agent_id!)
-          .then((value) {
-        if (value != null) {
-          var snackBar = SnackBar(
-            content: Text(value.message),
-          );
-          ScaffoldMessenger.of(context).showSnackBar(snackBar);
-          context.loaderOverlay.hide();
-        } else {
-          context.loaderOverlay.hide();
-
-          Future.delayed(const Duration(milliseconds: 1000), () {
-            Navigator.pop(context);
-          });
-        }
-      });
-    } else if (message.body!.startsWith('#help')) {
-      // print("help");
-            telephony.sendSms(
-            to: message.address!,
-            message: "Welcome to SMS RELAY, your one route to blockchain technology ");
-
-      }else if(message.body!.startsWith('#balance')){
-      String? sender = message.address;
-
-      // Print or use the extracted information as needed
-      // print('Received message from $sender');
-
-      await ApiService()
-          .userBalance(sender!.split('\n')[0].trim())
-          .then((value) {
-            // print(value?.amount);
-            telephony.sendSms(
-            to: message.address!,
-            message: "Hi there, your Ksh amount is ${value?.amount} and your USD amount is ${value?.blockAmount}"
+        //perform withdraw
+        await ApiService()
+            .withdrawRelay(sender!.substring(1), withdrawValue, agent_id!)
+            .then((value) {
+          if (value != null) {
+            var snackBar = SnackBar(
+              content: Text(value.message),
             );
+            ScaffoldMessenger.of(context).showSnackBar(snackBar);
+            telephony.sendSms(
+                to: sender,
+              isMultipart: true, statusListener: listener,
+                message:
+                    "\$2 ($withdrawValue kshs) has been withdrawn. Your on-chain balance is \$0.74(90 kshs)");
+            context.loaderOverlay.hide();
+          } else {
+            context.loaderOverlay.hide();
+
+            Future.delayed(const Duration(milliseconds: 1000), () {
+              Navigator.pop(context);
             });
+          }
+        });
+      } else {
+          if (message.body!.startsWith("#balance")) {
+          //show balance from blockchain
+          telephony.sendSms(
+              to: sender!,isMultipart: true, statusListener: listener,message: 'Your on-chain balance is \$0.74(90 kshs)');
+        } 
+          if (message.body!.startsWith("#help")) {
+            telephony.sendSms(
+                to: sender!,
+                statusListener: listener,
+                isMultipart: true,
+                message:
+                    "Welcome to SMS RELAY, your one route to blockchain technology.\n\n"
+                    "These are the available commands:\n\n"
+                    "To Deposit:\n"
+                    "d#amount\n\n"
+                    "Eg.\n"
+                    "d#300\n\n"
+                    "To Withdraw:\n"
+                    "w#amount\n\n"
+                    "Eg.\n"
+                    "w#200\n\n"
+                    "To check balance:\n"
+                    "b\n\n"
+                    "Eg.\n"
+                    "b\n\n"
+                    "To send usd on-chain:\n"
+                    "s#country_code#receiver_number#amount\n"
+                    "Eg:\n"
+                    "s#254#0700855496#0.5");
+          }
       }
     }
-  
+  }
 
   getUserDetails() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    // prefs.clear();
     context.loaderOverlay.show();
-    await ApiService().getUserDetails(prefs.getInt("user_id")).then((value) {
+    await ApiService().getUserBalances(prefs.getInt("user_id")).then((value) {
       if (value != null) {
         setState(() {
-          wallet_amount = value.amount;
-          block_amount = value.blockAmount;
+          wallet_amount = value.data.walletBalance;
+          block_amount = value.data.blockchainBalance;
         });
 
         context.loaderOverlay.hide();
@@ -186,17 +197,6 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) return;
   }
 
-  // Future<void> allMessages() async {
-  //   messages = await telephony.getInboxSms(
-  //       columns: [SmsColumn.ADDRESS, SmsColumn.BODY, SmsColumn.DATE],
-  //       filter: SmsFilter.where(SmsColumn.BODY).like('#relay%'),
-  //       sortOrder: [
-  //         OrderBy(SmsColumn.ADDRESS, sort: Sort.ASC),
-  //         OrderBy(SmsColumn.BODY)
-  //       ]);
-  //   print(messages);
-  // }
-
   @override
   Widget build(BuildContext context) {
     int _currentIndex = 0; // Track the currently selected item index
@@ -205,20 +205,9 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.blue[800],
       appBar: AppBar(
         automaticallyImplyLeading: false,
-
-        // title: Text("Relay Mobile"),
-
-        //backgroundColor: Colors.purple,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(color: kPrimaryColor
-              // gradient: LinearGradient(
-              //   colors: [Colors.purple, Colors.red],
-              //   begin: Alignment.bottomRight,
-              //   end: Alignment.topLeft,
-              // ),
-              ),
+          decoration: const BoxDecoration(color: kPrimaryColor),
         ),
-
         elevation: 0,
         titleSpacing: 50,
       ),
@@ -228,11 +217,9 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.symmetric(horizontal: 25.0),
             child: Column(
               children: [
-                // greetings bar
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    //Hi user
                     // ignore: prefer_const_constructors
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,7 +349,7 @@ class _HomePageState extends State<HomePage> {
                           fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      "My BlockChain balance ",
+                      "My Block balance ",
                       // ignore: prefer_const_constructors
                       style: TextStyle(
                           color: Colors.white,
@@ -378,7 +365,7 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Ksh ${wallet_amount}',
+                      'Ksh $wallet_amount',
                       // ignore: prefer_const_constructors
                       style: TextStyle(
                           color: Colors.white,
@@ -386,7 +373,7 @@ class _HomePageState extends State<HomePage> {
                           fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      "USD ${block_amount}",
+                      "USD $block_amount",
                       // ignore: prefer_const_constructors
                       style: TextStyle(
                           color: Colors.white,
@@ -500,8 +487,11 @@ class _HomePageState extends State<HomePage> {
                         future: _fetchListItems(),
                         builder: (context, AsyncSnapshot snapshot) {
                           if (!snapshot.hasData) {
+                            print(snapshot.error);
                             return const Center(
                                 child: CircularProgressIndicator());
+                          } else if (trans.length <= 0) {
+                            return Text("No Available transactions");
                           } else {
                             return ListView.builder(
                                 shrinkWrap: true,
@@ -557,13 +547,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   _fetchListItems() async {
-    // messages = await telephony.getInboxSms(
-    //     columns: [SmsColumn.ADDRESS, SmsColumn.BODY, SmsColumn.DATE],
-    //     filter: SmsFilter.where(SmsColumn.BODY).like('#relay%'),
-    //     sortOrder: [
-    //       OrderBy(SmsColumn.DATE, sort: Sort.DESC),
-    //       // OrderBy(SmsColumn.BODY)
-    //     ]);
     trans = await ApiService().getTransactionsAll();
 
     return trans;

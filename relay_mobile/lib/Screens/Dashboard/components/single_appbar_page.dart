@@ -11,7 +11,7 @@ class _SimpleAppBarPageState extends State<SimpleAppBarPage> {
         length: 4,
         child: Scaffold(
           appBar: AppBar(
-            title: Text("PATA"),
+            title: Text("RELAY"),
             //centerTitle: true,
             leading: IconButton(
               icon: Icon(Icons.menu),

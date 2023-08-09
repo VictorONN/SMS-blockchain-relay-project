@@ -16,21 +16,18 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
-    return LoaderOverlay(
+    return const LoaderOverlay(
       child: Background(
         child: SafeArea(
           child: SingleChildScrollView(
             child: Responsive(
-              mobile: const MobileLoginScreen(),
+              mobile: MobileLoginScreen(),
               desktop: Row(
                 children: [
-                  // const Expanded(
-                  //   child: LoginScreenTopImage(),
-                  // ),
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
+                      children: [
                         SizedBox(
                           width: 450,
                           child: LoginForm(),
@@ -120,12 +117,11 @@ class MobileLoginScreen extends StatefulWidget {
 class _MobileLoginScreenState extends State<MobileLoginScreen> {
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return const Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        // const LoginScreenTopImage(),
         Row(
-          children: const [
+          children: [
             Spacer(),
             Expanded(
               flex: 8,

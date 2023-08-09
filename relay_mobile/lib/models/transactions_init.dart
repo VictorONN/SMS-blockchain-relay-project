@@ -11,7 +11,7 @@ String transactionInitToJson(TransactionInit data) => json.encode(data.toJson())
 class TransactionInit {
     bool error;
     String message;
-    List<dynamic> data;
+    Data data;
 
     TransactionInit({
         required this.error,
@@ -22,12 +22,32 @@ class TransactionInit {
     factory TransactionInit.fromJson(Map<String, dynamic> json) => TransactionInit(
         error: json["error"],
         message: json["message"],
-        data: List<dynamic>.from(json["data"].map((x) => x)),
+        data: Data.fromJson(json["data"]),
     );
 
     Map<String, dynamic> toJson() => {
         "error": error,
         "message": message,
-        "data": List<dynamic>.from(data.map((x) => x)),
+        "data": data.toJson(),
+    };
+}
+
+class Data {
+    String message;
+    String customMessage;
+
+    Data({
+        required this.message,
+        required this.customMessage,
+    });
+
+    factory Data.fromJson(Map<String, dynamic> json) => Data(
+        message: json["message"],
+        customMessage: json["custom_message"],
+    );
+
+    Map<String, dynamic> toJson() => {
+        "message": message,
+        "custom_message": customMessage,
     };
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:relay_mobile/pages/home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'Screens/Welcome/welcome_screen.dart';
+import 'Screens/Login/login_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -30,8 +30,11 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   var isLogin;
 
+
   checkUserLoginState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    //  SharedPreferences prefs = await SharedPreferences.getInstance();
+    // prefs.clear();
     var token = prefs.getString('access');
     setState(() {
       isLogin = token == null || token == "" ? false : true;
@@ -54,7 +57,7 @@ class _MyAppState extends State<MyApp> {
         home: isLogin != null
             ? isLogin
                 ? const HomePage()
-                : const WelcomeScreen()
-            : const WelcomeScreen());
+                : const LoginScreen()
+            : const LoginScreen());
   }
 }

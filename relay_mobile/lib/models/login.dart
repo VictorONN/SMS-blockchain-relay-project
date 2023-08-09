@@ -36,26 +36,34 @@ class Data {
     String token;
     String phoneNumber;
     int id;
-    dynamic tillNumber;
+    String walletAccount;
+    int depositRate;
+    int withdrawRate;
 
     Data({
         required this.token,
         required this.phoneNumber,
         required this.id,
-        this.tillNumber,
+        required this.walletAccount,
+        required this.depositRate,
+        required this.withdrawRate,
     });
 
     factory Data.fromJson(Map<String, dynamic> json) => Data(
         token: json["token"],
         phoneNumber: json["phone_number"],
         id: json["id"],
-        tillNumber: json["till_number"],
+        walletAccount: json["wallet_account"],
+        depositRate: json["deposit_rate"],
+        withdrawRate: json["withdraw_rate"],
     );
 
     Map<String, dynamic> toJson() => {
         "token": token,
         "phone_number": phoneNumber,
         "id": id,
-        "till_number": tillNumber,
+        "wallet_account": walletAccount,
+        "deposit_rate": depositRate,
+        "withdraw_rate": withdrawRate,
     };
 }

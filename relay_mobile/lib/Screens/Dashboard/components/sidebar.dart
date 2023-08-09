@@ -30,7 +30,8 @@ class _SideBarState extends State<SideBar>
   FocusNode searchFocusNode = FocusNode();
   FocusNode textFieldFocusNode = FocusNode();
   late SingleValueDropDownController _cnt;
-  double currency_rate = 0.00;
+  double _depositRate = 0.0;
+  double _withdrawRate = 0.0;
 
   String phone_number = "";
   int? user_id;
@@ -139,50 +140,49 @@ class _SideBarState extends State<SideBar>
                             builder: (BuildContext context) {
                               return AlertDialog(
                                 scrollable: true,
-                                title: const Text("Set Currency Rate"),
+                                title: const Text("Set Deposit and Withdraw Rates"),
                                 content: Padding(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 20),
                                     child: Form(
-                                      key: _formKey,
-                                      child: DropDownTextField(
-                                        // initialValue: "name4",
-                                        controller: _cnt,
-                                        clearOption: true,
-                                        // enableSearch: true,
-                                        // dropdownColor: Colors.green,
-                                        // searchDecoration: const InputDecoration(
-                                        //     hintText:
-                                        //         "enter your custom hint text here"),
-                                        validator: (value) {
-                                          if (value == null) {
-                                            return "Required field";
-                                          } else {
-                                            return null;
-                                          }
-                                        },
-                                        dropDownItemCount: 2,
-
-                                        dropDownList: const [
-                                          DropDownValueModel(
-                                              name: 'USD', value: "usd"),
-                                          DropDownValueModel(
-                                              name: 'Ksh', value: "ksh"),
-                                        ],
-                                        onChanged: (val) {
-                                          print(val.value);
-                                          if (val.value == "usd") {
-                                            setState(() {
-                                              currency_rate = 140.00;
-                                            });
-                                          } else {
-                                            setState(() {
-                                              currency_rate = 100.00;
-                                            });
-                                          }
-                                        },
-                                      ),
-                                    )
+                                        key: _formKey,
+                                        child:  Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              TextField(
+                                                decoration: InputDecoration(
+                                                    labelText: 'Deposit Rate'),
+                                                keyboardType:
+                                                    TextInputType.number,
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    _depositRate = double.parse(value);
+                                                  });
+                                                },
+                                              ),
+                                              TextField(
+                                                decoration: InputDecoration(
+                                                    labelText: 'Withdraw Rate'),
+                                                keyboardType:
+                                                    TextInputType.number,
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    _withdrawRate = double.parse(value);
+                                                  });
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                          // actions: [
+                                          //   ElevatedButton(
+                                          //     onPressed: () {
+                                          //       // widget.onSubmit(DepositWithdrawModalData(depositRate: _depositRate, withdrawRate: _withdrawRate));
+                                          //       Navigator.of(context).pop();
+                                          //     },
+                                          //     child: Text('Submit'),
+                                          //   ),
+                                          // ],
+                                        )
 
                                     // child: Form(
                                     //   child: Column(
@@ -201,11 +201,13 @@ class _SideBarState extends State<SideBar>
                                   ElevatedButton(
                                     child: const Text("submit"),
                                     onPressed: () async {
-                                      print(currency_rate);
+                                       context.loaderOverlay.show();
                                       await ApiService()
-                                          .updateUser(user_id, currency_rate)
+                                          .updateUser(user_id, _depositRate,
+                                              _withdrawRate)
                                           .then((value) {
                                         if (value != null) {
+                                          Navigator.of(context).pop(); 
                                           Flushbar(
                                             titleColor: Colors.white,
                                             flushbarPosition:

@@ -10,77 +10,7 @@ import '../../../components/already_have_an_account_acheck.dart';
 import '../../../components/rounded_button.dart';
 import '../../../constants.dart';
 import '../../../services/apis.dart';
-import '../../Signup/signup_screen.dart';
 
-// class LoginForm extends StatelessWidget {
-//   const LoginForm({
-//     Key? key,
-//   }) : super(key: key);
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Form(
-//       child: Column(
-//         children: [
-//           TextFormField(
-//             keyboardType: TextInputType.emailAddress,
-//             textInputAction: TextInputAction.next,
-//             cursorColor: kPrimaryColor,
-//             onSaved: (email) {},
-//             decoration: const InputDecoration(
-//               hintText: "Your email",
-//               prefixIcon: Padding(
-//                 padding: EdgeInsets.all(defaultPadding),
-//                 child: Icon(Icons.person),
-//               ),
-//             ),
-//           ),
-//           Padding(
-//             padding: const EdgeInsets.symmetric(vertical: defaultPadding),
-//             child: TextFormField(
-//               textInputAction: TextInputAction.done,
-//               obscureText: true,
-//               cursorColor: kPrimaryColor,
-//               decoration: const InputDecoration(
-//                 hintText: "Your password",
-//                 prefixIcon: Padding(
-//                   padding: EdgeInsets.all(defaultPadding),
-//                   child: Icon(Icons.lock),
-//                 ),
-//               ),
-//             ),
-//           ),
-//           const SizedBox(height: defaultPadding),
-//           Hero(
-//             tag: "login_btn",
-//             child: RoundedButton(
-//               text: "LOGIN",
-//               press: () {
-//                 Navigator.pushReplacement(context,
-//                     MaterialPageRoute(builder: (context) {
-//                   return Dashboard();
-//                 }));
-//               },
-//             ),
-//           ),
-//           const SizedBox(height: defaultPadding),
-//           AlreadyHaveAnAccountCheck(
-//             press: () {
-//               Navigator.push(
-//                 context,
-//                 MaterialPageRoute(
-//                   builder: (context) {
-//                     return const SignUpScreen();
-//                   },
-//                 ),
-//               );
-//             },
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
 
@@ -108,10 +38,10 @@ class _LoginFormState extends State<LoginForm> {
             validator: (value) {
             
               String pattern =
-                  r'^\+254\d{9}$';
+                  r'^254\d{9}$';
               RegExp regex = RegExp(pattern);
               if (value == null || value.isEmpty || !regex.hasMatch(value)) {
-                return 'Phone Number should start with +254';
+                return 'Phone Number should start with 254';
               } else {
                 return null;
               }
@@ -202,14 +132,7 @@ class _LoginFormState extends State<LoginForm> {
           const SizedBox(height: defaultPadding),
           AlreadyHaveAnAccountCheck(
             press: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) {
-                    return const SignUpScreen();
-                  },
-                ),
-              );
+             
             },
           ),
         ],
@@ -231,21 +154,12 @@ class _LoginFormState extends State<LoginForm> {
 
     await ApiService().login(phone, password).then((value) {
       if (value != null) {
-
-        var access = value.data.token;
-        var user_id = value.data.id;
-        var phone_number = value.data.phoneNumber;
-        var till_number = value.data.tillNumber;
-        print(value.data.tillNumber);
-        if(value.data.tillNumber == null || value.data.tillNumber == ""){
-          prefs.setString('till_number', "");
-        }else{
-          prefs.setString('till_number', till_number);
-        }
-      
-        prefs.setString('access', access);
-        prefs.setInt('user_id', user_id);
-        prefs.setString('phone_number', phone_number);
+        prefs.setString('access', value.data.token);
+        prefs.setInt('user_id', value.data.id);
+        prefs.setString('phone_number', value.data.phoneNumber);
+        prefs.setString('wallet_account', value.data.walletAccount);
+        prefs.setInt('deposit_rate', value.data.depositRate);
+        prefs.setInt('withdraw_rate', value.data.withdrawRate);
         
 
         Flushbar(
