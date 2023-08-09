@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ffi';
 
 import 'package:flutter/material.dart';
@@ -30,6 +31,9 @@ class _HomePageState extends State<HomePage> {
 
   List<Transactions> trans = [];
 
+  bool paymentSuccessful = false;
+  late StreamSubscription _subscription; // For canceling the polling
+
   final telephony = Telephony.instance;
   String phone_number = "";
   int wallet_amount = 0;
@@ -54,10 +58,40 @@ class _HomePageState extends State<HomePage> {
       return null;
     }
   }
-            final SmsSendStatusListener listener = (SendStatus status) {
-              print(status);
-              // Handle the status
-            };
+
+  final SmsSendStatusListener listener = (SendStatus status) {
+    print(status);
+    // Handle the status
+  };
+
+  Future<void> pollPaymentStatus(
+      reference, sender, divisionDepositResult, depositValue) async {
+    _subscription = Stream.periodic(Duration(seconds: 5)).listen((_) async {
+      print("Polling payment status...");
+
+      final value = await ApiService()
+          .getTransactionsByRef(reference); // Replace with your API call
+
+      if (value != null) {
+        if (value[0].status == "complete") {
+          setState(() {
+            paymentSuccessful = true;
+          });
+
+          telephony.sendSms(
+              to: sender,
+              isMultipart: true,
+              statusListener: listener,
+              message:
+                  "\$$divisionDepositResult ($depositValue kshs) has been deposited. Your on-chain balance is \$2.74(290 kshs)");
+          _subscription
+              .cancel(); // Cancel the polling since payment is successful
+              getUserDetails();
+          print("Payment successful!");
+        }
+      }
+    });
+  }
 
   onMessage(SmsMessage message) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -69,7 +103,8 @@ class _HomePageState extends State<HomePage> {
       print("Deposit value: $depositValue");
 
       int? depositRate = prefs.getInt("deposit_rate")!;
-      // double divisionDepositResult = depositValue / depositRate; // send to block chain the divided result
+      double divisionDepositResult =
+          depositValue / depositRate; // send to block chain the divided result
 
       await ApiService()
           .sendRelay(sender!.substring(1), depositValue, agent_id!)
@@ -79,11 +114,12 @@ class _HomePageState extends State<HomePage> {
             content: Text(value.message),
           );
           ScaffoldMessenger.of(context).showSnackBar(snackBar);
-          telephony.sendSms(
-              to: sender,
-              isMultipart: true, statusListener: listener,
-              message:
-                  "\$2.74 ($depositValue kshs) has been deposited. Your on-chain balance is \$2.74(290 kshs)");
+          print("here");
+          print(value.data.transactionReference);
+
+          pollPaymentStatus(value.data.transactionReference, sender,
+              divisionDepositResult, depositValue);
+
           context.loaderOverlay.hide();
         } else {
           context.loaderOverlay.hide();
@@ -112,7 +148,8 @@ class _HomePageState extends State<HomePage> {
             ScaffoldMessenger.of(context).showSnackBar(snackBar);
             telephony.sendSms(
                 to: sender,
-              isMultipart: true, statusListener: listener,
+                isMultipart: true,
+                statusListener: listener,
                 message:
                     "\$2 ($withdrawValue kshs) has been withdrawn. Your on-chain balance is \$0.74(90 kshs)");
             context.loaderOverlay.hide();
@@ -125,36 +162,39 @@ class _HomePageState extends State<HomePage> {
           }
         });
       } else {
-          if (message.body!.startsWith("#balance")) {
+        if (message.body!.startsWith("#balance")) {
           //show balance from blockchain
           telephony.sendSms(
-              to: sender!,isMultipart: true, statusListener: listener,message: 'Your on-chain balance is \$0.74(90 kshs)');
-        } 
-          if (message.body!.startsWith("#help")) {
-            telephony.sendSms(
-                to: sender!,
-                statusListener: listener,
-                isMultipart: true,
-                message:
-                    "Welcome to SMS RELAY, your one route to blockchain technology.\n\n"
-                    "These are the available commands:\n\n"
-                    "To Deposit:\n"
-                    "d#amount\n\n"
-                    "Eg.\n"
-                    "d#300\n\n"
-                    "To Withdraw:\n"
-                    "w#amount\n\n"
-                    "Eg.\n"
-                    "w#200\n\n"
-                    "To check balance:\n"
-                    "b\n\n"
-                    "Eg.\n"
-                    "b\n\n"
-                    "To send usd on-chain:\n"
-                    "s#country_code#receiver_number#amount\n"
-                    "Eg:\n"
-                    "s#254#0700855496#0.5");
-          }
+              to: sender!,
+              isMultipart: true,
+              statusListener: listener,
+              message: 'Your on-chain balance is \$0.74(90 kshs)');
+        }
+        if (message.body!.startsWith("#help")) {
+          telephony.sendSms(
+              to: sender!,
+              statusListener: listener,
+              isMultipart: true,
+              message:
+                  "Welcome to SMS RELAY, your one route to blockchain technology.\n\n"
+                  "These are the available commands:\n\n"
+                  "To Deposit:\n"
+                  "#d#amount\n\n"
+                  "Eg.\n"
+                  "#d#300\n\n"
+                  "To Withdraw:\n"
+                  "#w#amount\n\n"
+                  "Eg.\n"
+                  "#w#200\n\n"
+                  "To check balance:\n"
+                  "#balance\n\n"
+                  "Eg.\n"
+                  "#balance\n\n"
+                  "To send usd on-chain:\n"
+                  "#s#country_code#receiver_number#amount\n"
+                  "Eg:\n"
+                  "#s#254#0700855496#0.5");
+        }
       }
     }
   }
@@ -270,33 +310,6 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(
                             height: 8,
                           ),
-                          // Text(
-                          //   "${DateFormat('dd-MMMM-yyyy').format(new DateTime.now())}",
-                          //   style: TextStyle(color: Colors.blue[200]),
-                          // )
-                          //        GestureDetector(
-                          //   onTap: () {
-                          //     setState(() {
-                          //       _new_message = 0; // Update the selected item index
-                          //     });
-                          //     const snackBar = SnackBar(
-                          //       content: Text('Transactions Updated'),
-                          //     );
-                          //     ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                          //   },
-                          //   child: const Icon(
-                          //     Icons.refresh,
-                          //     color: Colors.white,
-                          //   ),
-                          // ),
-                          // Icon(
-                          //   Icons.notifications,
-                          //   color: Colors.white,
-                          // ),
-                          // Text(
-                          //   "${_new_message}",
-                          //   style: TextStyle(color: Colors.white, fontSize: 25),
-                          // ),
                         ],
                       ),
                     ),
@@ -304,34 +317,6 @@ class _HomePageState extends State<HomePage> {
                     //
                   ],
                 ),
-
-                // const SizedBox(
-                //   height: 25,
-                // ),
-
-                //Search Bar
-                // Container(
-                //   padding: const EdgeInsets.all(12),
-                //   decoration: BoxDecoration(
-                //       color: Colors.blue[600],
-                //       borderRadius: BorderRadius.circular(12)),
-                //   child: const Row(
-                //     children: [
-                //       Icon(
-                //         Icons.search,
-                //         color: Colors.white,
-                //       ),
-                //       SizedBox(
-                //         width: 5,
-                //       ),
-                //       Text(
-                //         "Search Message",
-                //         style: TextStyle(color: Colors.white),
-                //       ),
-                //     ],
-                //   ),
-                // ),
-
                 const SizedBox(
                   height: 25,
                 ),
@@ -385,72 +370,6 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(
                   height: 15,
                 ),
-                // Row(
-                //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                //   children: [
-                //     Column(
-                //       children: [
-                //         Container(
-                //           decoration: BoxDecoration(
-                //               color: Colors.blue[600],
-                //               borderRadius: BorderRadius.circular(12)),
-                //           padding: const EdgeInsets.all(16),
-
-                //           // ignore: prefer_const_constructors
-                //           child:
-                //               Text("20", style: TextStyle(color: Colors.white)),
-                //         ),
-                //         const SizedBox(
-                //           height: 12,
-                //         ),
-                //         const Text("Incoming",
-                //             style: TextStyle(color: Colors.white)),
-                //       ],
-                //     ),
-                //     Column(
-                //       children: [
-                //         Container(
-                //           decoration: BoxDecoration(
-                //               color: Colors.blue[600],
-                //               borderRadius: BorderRadius.circular(12)),
-                //           padding: const EdgeInsets.all(16),
-
-                //           // ignore: prefer_const_constructors
-                //           child:
-                //               Text("10", style: TextStyle(color: Colors.white)),
-                //         ),
-                //         const SizedBox(
-                //           height: 12,
-                //         ),
-                //         const Text(
-                //           "Pending",
-                //           style: TextStyle(color: Colors.white),
-                //         ),
-                //       ],
-                //     ),
-                //     Column(
-                //       children: [
-                //         Container(
-                //           decoration: BoxDecoration(
-                //               color: Colors.blue[600],
-                //               borderRadius: BorderRadius.circular(12)),
-                //           padding: const EdgeInsets.all(16),
-
-                //           // ignore: prefer_const_constructors
-                //           child:
-                //               Text("30", style: TextStyle(color: Colors.white)),
-                //         ),
-                //         const SizedBox(
-                //           height: 12,
-                //         ),
-                //         const Text(
-                //           "Processed",
-                //           style: TextStyle(color: Colors.white),
-                //         ),
-                //       ],
-                //     )
-                //   ],
-                // ),
               ],
             ),
           ),
@@ -510,28 +429,8 @@ class _HomePageState extends State<HomePage> {
                                             title: "${trans[index].purpose}",
                                             subtitle: "Via - Relay",
                                             description:
-                                                "Initator : ${trans[index].sender}\n\nReceiver :${trans[index].receiver}\n\nAmount : Ksh ${trans[index].amount}",
+                                                "Initator : ${trans[index].sender}\n\nAmount : Ksh ${trans[index].amount}",
                                           )
-
-                                          // ListTile(
-                                          //   // onTap: () => initPlatformState(),
-                                          //   // leading: Icon(Icons.message),
-                                          //   title: Text(
-                                          //     "${trans[index].sender} - Ksh ${trans[index].amount}",
-                                          //     style: const TextStyle(
-                                          //         fontSize: 17,
-                                          //         fontWeight: FontWeight.bold),
-                                          //   ),
-                                          //   subtitle: Text(
-                                          //       "Via - ${trans[index].purpose}"),
-                                          //   // trailing: Text('${trans[index].amount}'),
-                                          //   // trailing: Text(
-                                          //   //   DateFormat('MM/dd/yyyy, hh:mm a')
-                                          //   //       .format(DateTime
-                                          //   //           .fromMillisecondsSinceEpoch(
-                                          //   //               messages[index].date!)),
-                                          //   // ),
-                                          // ),
                                           ));
                                 });
                           }

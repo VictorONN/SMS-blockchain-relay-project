@@ -33,21 +33,41 @@ class TransactionInit {
 }
 
 class Data {
+    String statusCode;
     String message;
-    String customMessage;
+    String paymentGateway;
+    String merchantReference;
+    String transactionReference;
+    String checkoutRequestId;
+    String customerMessage;
 
     Data({
+        required this.statusCode,
         required this.message,
-        required this.customMessage,
+        required this.paymentGateway,
+        required this.merchantReference,
+        required this.transactionReference,
+        required this.checkoutRequestId,
+        required this.customerMessage,
     });
 
     factory Data.fromJson(Map<String, dynamic> json) => Data(
+        statusCode: json["statusCode"],
         message: json["message"],
-        customMessage: json["custom_message"],
+        paymentGateway: json["PaymentGateway"],
+        merchantReference: json["MerchantReference"],
+        transactionReference: json["TransactionReference"],
+        checkoutRequestId: json["CheckoutRequestID"],
+        customerMessage: json["CustomerMessage"],
     );
 
     Map<String, dynamic> toJson() => {
+        "statusCode": statusCode,
         "message": message,
-        "custom_message": customMessage,
+        "PaymentGateway": paymentGateway,
+        "MerchantReference": merchantReference,
+        "TransactionReference": transactionReference,
+        "CheckoutRequestID": checkoutRequestId,
+        "CustomerMessage": customerMessage,
     };
 }

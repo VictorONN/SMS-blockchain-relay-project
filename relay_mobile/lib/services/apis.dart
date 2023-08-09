@@ -103,6 +103,31 @@ class ApiService {
     }
   }
 
+  Future<List<Transactions>> getTransactionsByRef(reference) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    final String? token = prefs.getString('access');
+    var client = http.Client();
+
+    final response =
+        await client.get(Uri.parse('${api_url}transaction/status/${reference}'), headers: {
+      'Content-Type': 'application/json',
+      // 'Authorization': 'Bearer $token'
+    }).catchError(
+      (error) {
+        print(error);
+      },
+    );
+
+    if (response.statusCode == 200) {
+      print("get status.....");
+      print(response.body);
+      return transactionsFromJson(response.body);
+    } else {
+      throw Exception('Failed to load transaction');
+    }
+  }
+
   Future<TransactionInit?> sendRelay(
       String sender, double amount, int agent_id) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -130,6 +155,7 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
+      print(response.body);
       return transactionInitFromJson(response.body);
     } else {
       return null;
