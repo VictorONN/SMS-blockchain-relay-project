@@ -1,8 +1,0 @@
-[project]
-protostar-version = "0.14.0"
-
-[contracts]
-relay_vault = ["src"]
-ERC20Contract = ["src"]
-
-
