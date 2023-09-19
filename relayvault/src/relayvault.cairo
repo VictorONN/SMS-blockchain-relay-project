@@ -3,10 +3,12 @@ use array::{ArrayTrait};
 
 #[starknet::interface]
 trait MpesavaultTrait<T> {
+    fn set_parameters(ref self: T, token_address: starknet::ContractAddress, fee_percentage: u256, withdraw_time: u64);
     fn register(ref self: T, amount: u256);
     fn send(ref self: T, amount: u256, from: starknet::ContractAddress, to: starknet::ContractAddress);
     fn withdraw(ref self: T, amount: u256);
-    fn view_balance(self: @T) -> u256;
+    fn view_total_balance(self: @T) -> u256;
+    fn view_relayer_balance(self: @T, address: starknet::ContractAddress) -> u256;
 }
 
 #[starknet::contract]
@@ -54,27 +56,47 @@ mod Relayvault {
 
     #[constructor]
     fn constructor(
-        ref self: ContractState, token_address: starknet::ContractAddress, fee_percentage: u256, withdraw_time: u64
+        ref self: ContractState
     ) {
         let caller = get_caller_address();
         self.owner_address.write(caller);
-        self.token.write(IERC20ABIDispatcher {contract_address: token_address});
-        self.fee_percentage.write(fee_percentage);
-        self.exit_timelock.write(withdraw_time);
     }
 
     #[external(v0)]
     impl Mpesavault of super::MpesavaultTrait<ContractState> {  
 
-        fn view_balance(self: @ContractState) -> u256 {
+        fn view_total_balance(self: @ContractState) -> u256 {
             self.amount_in_vault.read()
-        }        
+        } 
 
-        // @dev How individual relays register to the vault by sending a certain amount of money
+        fn view_relayer_balance(self: @ContractState, address: starknet::ContractAddress) -> u256 {
+            //confirm to is a registered relay 
+            assert(self.registered_relays.read(address) == true, 'to is not a relay');
+            self.relay_balances.read(address)
+        }       
+
+        // ETH: 0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
+        // fee percentage: 0x2
+        // withdraw_time: 24 hrs which is 86400s which is 0x15180 in hex
+        fn set_parameters(
+            ref self: ContractState, token_address: starknet::ContractAddress, fee_percentage: u256, withdraw_time: u64
+        ) {
+            let caller = get_caller_address();
+            assert(caller == self.owner_address.read(), 'Not owner');
+            self.owner_address.write(caller);
+            self.token.write(IERC20ABIDispatcher {contract_address: token_address});
+            self.fee_percentage.write(fee_percentage);
+            self.exit_timelock.write(withdraw_time);
+        }
+
+        // // @dev How individual relays register to the vault by sending a certain amount of money
         fn register(ref self: ContractState, amount: u256) {
             let caller = get_caller_address();
 
             let this_contract = get_contract_address();
+
+            // TODO: assert token is equal to ETh address 
+            // assert(self.token.read() != 0, 'token not initialized');
 
             self.token.read().transfer_from(
                 caller, 
