@@ -1,11 +1,13 @@
 use starknet::ContractAddress;
 use array::{ArrayTrait};
+use traits::{TryInto, Into};
 
 #[starknet::interface]
 trait MpesavaultTrait<T> {
     fn set_parameters(ref self: T, token_address: starknet::ContractAddress, fee_percentage: u256, withdraw_time: u64);
     fn register(ref self: T, amount: u256);
     fn send(ref self: T, amount: u256, from: starknet::ContractAddress, to: starknet::ContractAddress);
+    fn deposit(ref self: T, amount: u256);
     fn withdraw(ref self: T, amount: u256);
     fn view_total_balance(self: @T) -> u256;
     fn view_relayer_balance(self: @T, address: starknet::ContractAddress) -> u256;
@@ -14,7 +16,8 @@ trait MpesavaultTrait<T> {
 #[starknet::contract]
 mod Relayvault {
 
-    use starknet::{ContractAddress, get_caller_address, get_contract_address, get_block_timestamp};
+    use core::traits::TryInto;
+use starknet::{ContractAddress, get_caller_address, get_contract_address, get_block_timestamp};
 
     use relayvault::interface::IERC20ABI;
     use relayvault::interface::IERC20ABIDispatcher;
@@ -71,7 +74,7 @@ mod Relayvault {
 
         fn view_relayer_balance(self: @ContractState, address: starknet::ContractAddress) -> u256 {
             //confirm to is a registered relay 
-            assert(self.registered_relays.read(address) == true, 'to is not a relay');
+            assert(self.registered_relays.read(address) == true, 'address is not a relay');
             self.relay_balances.read(address)
         }       
 
@@ -81,84 +84,109 @@ mod Relayvault {
         fn set_parameters(
             ref self: ContractState, token_address: starknet::ContractAddress, fee_percentage: u256, withdraw_time: u64
         ) {
-            let caller = get_caller_address();
-            assert(caller == self.owner_address.read(), 'Not owner');
-            self.owner_address.write(caller);
-            self.token.write(IERC20ABIDispatcher {contract_address: token_address});
-            self.fee_percentage.write(fee_percentage);
-            self.exit_timelock.write(withdraw_time);
+            // let caller = get_caller_address();
+            // assert(caller == self.owner_address.read(), 'Not owner');
+            // self.owner_address.write(caller);
+            // self.token.write(IERC20ABIDispatcher {contract_address: token_address});
+            // self.fee_percentage.write(fee_percentage);
+            // self.exit_timelock.write(withdraw_time);
         }
 
-        // // @dev How individual relays register to the vault by sending a certain amount of money
+        fn deposit(ref self: ContractState, amount: u256) {
+            // let caller = get_caller_address();
+
+            // assert(self.registered_relays.read(caller) == true, 'not a relay');
+
+            // let this_contract = get_contract_address();
+
+            // // TODO: assert token is equal to ETh address 
+            // // assert(self.token.read() != 0, 'token not initialized');
+
+            // self.token.read().transfer_from(
+            //     caller, 
+            //     this_contract, 
+            //     amount);
+
+            // let current_amount = self.amount_in_vault.read();
+            // self.amount_in_vault.write(current_amount + amount);
+
+            // let relay_amount = self.relay_balances.read(caller);
+            // self.relay_balances.write(caller, relay_amount + amount);
+            // return ();
+
+        }
+
+        // @dev How individual relays register to the vault by sending a certain amount of money
+        // alternatively, admin could register/whitelist relays to ensure there is no spam
         fn register(ref self: ContractState, amount: u256) {
-            let caller = get_caller_address();
+            // let caller = get_caller_address();
 
-            let this_contract = get_contract_address();
+            // let this_contract = get_contract_address();
 
-            // TODO: assert token is equal to ETh address 
-            // assert(self.token.read() != 0, 'token not initialized');
+            // // TODO: assert token is equal to ETh address 
+            // // assert(self.token.read() != 0, 'token not initialized');
 
-            self.token.read().transfer_from(
-                caller, 
-                this_contract, 
-                amount);
+            // self.token.read().transfer_from(
+            //     caller, 
+            //     this_contract, 
+            //     amount);
             
-            self.registered_relays.write(caller, true);   
-            let current_amount = self.amount_in_vault.read();
-            self.amount_in_vault.write(current_amount + amount);
-            return ();   
+            // self.registered_relays.write(caller, true);   
+            // let current_amount = self.amount_in_vault.read();
+            // self.amount_in_vault.write(current_amount + amount);
+            // return ();   
         }
         
         // @dev The 'trusted' admin, as an intermediary, sends tokens to receiver relay. Balance of sender relay is deducted while receiver relay is added
         fn send(ref self: ContractState, amount: u256, from: starknet::ContractAddress, to: starknet::ContractAddress) {
 
-            self.check_admin();
+            // self.check_admin();
             
-            let this_contract = get_contract_address();
+            // let this_contract = get_contract_address();
 
-            let caller = get_caller_address();
+            // let caller = get_caller_address();
 
-            assert(self.relay_balances.read(caller) > amount, 'No liquidity');
+            // assert(self.relay_balances.read(caller) > amount, 'No liquidity');
 
-            //confirm to is a registered relay 
-            assert(self.registered_relays.read(to) == true, 'to is not a relay');
+            // //confirm to is a registered relay 
+            // assert(self.registered_relays.read(to) == true, 'to is not a relay');
 
-            // TODO: Subtract fee from amount to be sent
+            // // TODO: Subtract fee from amount to be sent
 
-            // self.check_balance_helper(amount);           
+            // // self.check_balance_helper(amount);           
 
-            self.token.read().transfer_from(
-                this_contract, 
-                to, 
-                amount
-            );
+            // self.token.read().transfer_from(
+            //     this_contract, 
+            //     to, 
+            //     amount
+            // );
 
-            self.relay_balances.write(from, self.relay_balances.read(from) - amount);
-            self.relay_balances.write(to, self.relay_balances.read(to) + amount); 
+            // self.relay_balances.write(from, self.relay_balances.read(from) - amount);
+            // self.relay_balances.write(to, self.relay_balances.read(to) + amount); 
 
-            self.emit(Event::Sent(Sent {
-                relay_to: to,
-                amount: amount,
-            }));
+            // self.emit(Event::Sent(Sent {
+            //     relay_to: to,
+            //     amount: amount,
+            // }));
         }
         
         // @dev A relay can withdraw their funds and stop being a relay. Their is a cool down period of time until funds actually exit the contract  
         fn withdraw (ref self: ContractState, amount: u256) {
 
-            let this_contract = get_contract_address();
-            let caller = get_caller_address();
-            let withdraw_period: u64 = self.exit_timelock.read();
+            // let this_contract = get_contract_address();
+            // let caller = get_caller_address();
+            // let withdraw_period: u64 = self.exit_timelock.read();
 
-            self.check_balance_helper(amount);
-            self.relay_balances.write(caller, self.relay_balances.read(caller) - amount);
+            // self.check_balance_helper(amount);
+            // self.relay_balances.write(caller, self.relay_balances.read(caller) - amount);
 
-            let current_amount = self.amount_in_vault.read();
-            self.amount_in_vault.write(current_amount - amount);
+            // let current_amount = self.amount_in_vault.read();
+            // self.amount_in_vault.write(current_amount - amount);
             
-            if (get_block_timestamp() > get_block_timestamp() + withdraw_period) {
-                self.token.read().transfer_from(this_contract, caller, amount);
-            } 
-            return();
+            // if (get_block_timestamp() > get_block_timestamp() + withdraw_period) {
+            //     self.token.read().transfer_from(this_contract, caller, amount);
+            // } 
+            // return();
         }
 
     }
