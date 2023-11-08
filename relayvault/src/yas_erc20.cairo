@@ -2,19 +2,27 @@
 // OpenZeppelin Contracts for Cairo v0.7.0 (token/erc20/erc20.cairo)
 use starknet::ContractAddress;
 
+// we need to have the interface of the remote ERC20 contract defined to import the Dispatcher.
 #[starknet::interface]
-trait IERC20<TState> {
-    fn name(self: @TState) -> felt252;
-    fn symbol(self: @TState) -> felt252;
-    fn decimals(self: @TState) -> u8;
-    fn totalSupply(self: @TState) -> u256;
-    fn balanceOf(self: @TState, account: ContractAddress) -> u256;
-    fn allowance(self: @TState, owner: ContractAddress, spender: ContractAddress) -> u256;
-    fn transfer(ref self: TState, recipient: ContractAddress, amount: u256) -> bool;
-    fn transferFrom(
-        ref self: TState, sender: ContractAddress, recipient: ContractAddress, amount: u256
+trait IERC20<TContractState> {
+    fn name(self: @TContractState) -> felt252;
+    fn symbol(self: @TContractState) -> felt252;
+    fn decimals(self: @TContractState) -> u8;
+    fn total_supply(self: @TContractState) -> u256;
+    fn balance_of(self: @TContractState, account: ContractAddress) -> u256;
+    fn allowance(self: @TContractState, owner: ContractAddress, spender: ContractAddress) -> u256;
+    fn transfer(ref self: TContractState, recipient: ContractAddress, amount: u256) -> bool;
+    fn transfer_from(
+        ref self: TContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256
     ) -> bool;
-    fn approve(ref self: TState, spender: ContractAddress, amount: u256) -> bool;
+    fn approve(ref self: TContractState, spender: ContractAddress, amount: u256) -> bool;
+
+    // CamelCase support
+    fn totalSupply(self: @TContractState) -> u256;
+    fn balanceOf(self: @TContractState, account: ContractAddress) -> u256;
+    fn transferFrom(
+        ref self: TContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256
+    ) -> bool;
 }
 
 #[starknet::contract]
@@ -98,7 +106,15 @@ mod ERC20 {
             self.ERC20_total_supply.read()
         }
 
+        fn total_supply(self: @ContractState) -> u256 {
+            self.ERC20_total_supply.read()
+        }
+
         fn balanceOf(self: @ContractState, account: ContractAddress) -> u256 {
+            self.ERC20_balances.read(account)
+        }
+
+        fn balance_of(self: @ContractState, account: ContractAddress) -> u256 {
             self.ERC20_balances.read(account)
         }
 
@@ -115,6 +131,18 @@ mod ERC20 {
         }
 
         fn transferFrom(
+            ref self: ContractState,
+            sender: ContractAddress,
+            recipient: ContractAddress,
+            amount: u256
+        ) -> bool {
+            let caller = get_caller_address();
+            self._spend_allowance(sender, caller, amount);
+            self._transfer(sender, recipient, amount);
+            true
+        }
+
+        fn transfer_from(
             ref self: ContractState,
             sender: ContractAddress,
             recipient: ContractAddress,
