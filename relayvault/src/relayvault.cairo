@@ -15,7 +15,7 @@ trait MpesavaultTrait<T> {
     // relay function 
     fn register(ref self: T, amount: u256);
     //user buy 
-    fn user_buy(ref self: T, amount: u256, relay: starknet::ContractAddress); 
+    fn user_buy(ref self: T, amount: u256, relay: starknet::ContractAddress);
     //user send function
     fn user_send(ref self: T, amount: u256, to: starknet::ContractAddress);
     // view function for user balance
@@ -38,7 +38,8 @@ mod Relayvault {
     use core::zeroable::Zeroable;
     use starknet::{ContractAddress, get_caller_address, get_contract_address, get_block_timestamp};
 
-    use relayvault::interfaces::interface_ERC20::{IERC20Dispatcher, IERC20DispatcherTrait};
+    // use relayvault::interfaces::interface_ERC20::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use relayvault::yas_erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
 
     use super::MpesavaultTrait;
 
@@ -123,7 +124,7 @@ mod Relayvault {
             self.relay_balances.write(relay, relay_balance - amount);
             // TODO: implement fee
             self.user_balances.write(caller, self.user_balances.read(caller) + amount);
-         } 
+        }
 
         fn user_send(ref self: ContractState, amount: u256, to: starknet::ContractAddress) {
             let caller = get_caller_address();
@@ -181,7 +182,7 @@ mod Relayvault {
             assert(self.registered_relays.read(caller) == true, 'relay: not a relay');
 
             let this_contract = get_contract_address();
-            
+
             self.token.read().transferFrom(caller, this_contract, amount);
 
             let current_amount = self.amount_in_vault.read();
@@ -252,18 +253,4 @@ mod Relayvault {
             assert(caller == self.owner_address.read(), 'Not the admin');
         }
     }
-// impl IERC20ABIImpl of IERC20ABI<ContractState> {
-//     fn transfer_from(ref self: ContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256)
-//         {
-//             self.token.read().balance_of(sender) - amount;
-//             self.token.read().balance_of(recipient) + amount;
-//         }
-
-//     fn balance_of(self: @ContractState, account: ContractAddress) -> u256 
-//         {
-//             self.token.read().balance_of(account)
-//         }
-
-// }
-
 }
