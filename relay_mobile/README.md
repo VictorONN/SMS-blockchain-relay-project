@@ -1,2 +1,2 @@
 # starknet_flutter_app
-building a wallet app on flutter 
+building a sms wallet app on starknet
