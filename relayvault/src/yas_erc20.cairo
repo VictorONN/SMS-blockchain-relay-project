@@ -24,6 +24,34 @@ trait IERC20<TContractState> {
         ref self: TContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256
     ) -> bool;
 }
+// #[starknet::interface]
+// trait ERC20ABI<TContractState> {
+//     // IERC20
+//     fn name() -> felt252;
+//     fn symbol() -> felt252;
+//     fn decimals() -> u8;
+//     fn total_supply() -> u256;
+//     fn balance_of(account: ContractAddress) -> u256;
+//     fn allowance(owner: ContractAddress, spender: ContractAddress) -> u256;
+//     fn transfer(recipient: ContractAddress, amount: u256) -> bool;
+//     fn transfer_from(
+//         sender: ContractAddress, recipient: ContractAddress, amount: u256
+//     ) -> bool;
+//     fn approve(spender: ContractAddress, amount: u256) -> bool;
+
+//     // Non-standard
+//     fn increase_allowance(spender: ContractAddress, added_value: u256) -> bool;
+//     fn decrease_allowance(spender: ContractAddress, subtracted_value: u256) -> bool;
+
+//     // Camel case compatibility
+//     fn totalSupply() -> u256;
+//     fn balanceOf(account: ContractAddress) -> u256;
+//     fn transferFrom(
+//         sender: ContractAddress, recipient: ContractAddress, amount: u256
+//     ) -> bool;
+//     fn increaseAllowance(spender: ContractAddress, addedValue: u256) -> bool;
+//     fn decreaseAllowance(spender: ContractAddress, subtractedValue: u256) -> bool;
+// }
 
 #[starknet::contract]
 mod ERC20 {
@@ -270,3 +298,5 @@ mod ERC20 {
         }
     }
 }
+
+

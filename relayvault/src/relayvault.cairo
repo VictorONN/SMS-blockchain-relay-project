@@ -13,11 +13,11 @@ trait MpesavaultTrait<T> {
         withdraw_time: u64
     );
     // relay function 
-    fn register(ref self: T, amount: u256);
+    fn relay_register(ref self: T, amount: u256);
     //user buy 
-    fn user_buy(ref self: T, amount: u256, relay: starknet::ContractAddress);
+    fn user_buy(ref self: T, user_to: ContractAddress, relayer_from: ContractAddress, amount: u256);
     //user send function
-    fn user_send(ref self: T, amount: u256, to: starknet::ContractAddress);
+    fn user_send(ref self: T, to: starknet::ContractAddress, amount: u256);
     // view function for user balance
     fn view_user_balance(self: @T, address: starknet::ContractAddress) -> u256;
     // user withdraw function 
@@ -52,7 +52,7 @@ mod Relayvault {
     #[derive(Drop, starknet::Event)]
     struct Sent {
         #[key]
-        relay_to: starknet::ContractAddress,
+        destination_to: starknet::ContractAddress,
         #[key]
         amount: u256
     }
@@ -110,32 +110,23 @@ mod Relayvault {
         }
 
         fn view_relayer_balance(self: @ContractState, address: starknet::ContractAddress) -> u256 {
-            //confirm address is a registered relay 
+            //confirm address is a registered relay  
             //need this because even registered relays can have 0 balance like all non-registered ones
             assert(self.registered_relays.read(address) == true, 'address is not a relay');
 
             self.relay_balances.read(address)
         }
 
-        fn user_buy(ref self: ContractState, amount: u256, relay: ContractAddress) {
-            let caller = get_caller_address();
-            let relay_balance = self.relay_balances.read(relay);
-            assert(relay_balance > amount, 'relayer: inadequate funds');
-            self.relay_balances.write(relay, relay_balance - amount);
-            // TODO: implement fee
-            self.user_balances.write(caller, self.user_balances.read(caller) + amount);
-        }
-
-        fn user_send(ref self: ContractState, amount: u256, to: starknet::ContractAddress) {
+        fn user_send(ref self: ContractState, to: starknet::ContractAddress, amount: u256 ) {
             let caller = get_caller_address();
             assert(self.user_balances.read(caller) > amount, 'user: inadequate funds');
 
             let this_contract = get_contract_address();
-            // TODO: implement fee
-            self.token.read().transferFrom(this_contract, to, amount);
+            // TODO: implement fee maybe
+            self.token.read().transfer(to, amount);
 
             //emit an event 
-            self.emit(Event::Sent(Sent { relay_to: to, amount: amount, }));
+            self.emit(Event::Sent(Sent { destination_to: to, amount: amount, }));
         }
 
         fn view_user_balance(self: @ContractState, address: starknet::ContractAddress) -> u256 {
@@ -154,9 +145,18 @@ mod Relayvault {
 
             self.user_balances.write(caller, user_balance - amount);
 
-            self.token.read().transferFrom(this_contract, caller, amount);
+            self.token.read().transfer(caller, amount);
             // return the new balance
             self.user_balances.read(caller)
+        }
+
+        fn user_buy(ref self: ContractState, user_to: ContractAddress, relayer_from: ContractAddress, amount: u256) {
+            // let caller = get_caller_address();
+            let relayer_balance = self.relay_balances.read(relayer_from);
+            assert(relayer_balance > amount, 'relayer: inadequate funds');
+            self.relay_balances.write(relayer_from, relayer_balance - amount);
+            // TODO: implement fee
+            self.user_balances.write(user_to, self.user_balances.read(user_to) + amount);
         }
 
         // mainnet USDC: 0x053C91253BC9682c04929cA02ED00b3E423f6710D2ee7e0D5EBB06F3eCF368A8 
@@ -195,7 +195,7 @@ mod Relayvault {
         }
 
         // @dev How individual relays register to the vault by sending a certain amount of money
-        fn register(ref self: ContractState, amount: u256) {
+        fn relay_register(ref self: ContractState, amount: u256) {
             let caller = get_caller_address();
 
             let this_contract = get_contract_address();
@@ -228,7 +228,7 @@ mod Relayvault {
                 self.relay_balances.write(caller, self.relay_balances.read(caller) - amount);
                 self.amount_in_vault.write(current_amount - amount);
 
-                self.token.read().transferFrom(this_contract, caller, amount);
+                self.token.read().transfer(caller, amount);
             }
         }
     }
